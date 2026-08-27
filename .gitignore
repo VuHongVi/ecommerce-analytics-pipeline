@@ -1,0 +1,68 @@
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Credentials and private keys
+*.pem
+*.key
+credentials*.json
+token*.json
+secrets*.json
+
+# Raw and exported business data
+data/
+raw/
+output/
+outputs/
+exports/
+private/
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.jsonl
+*.parquet
+*.feather
+
+# Power BI files containing imported data
+*.pbix
+
+# Keep Power BI templates
+!*.pbit
+
+# Python environments
+.venv/
+venv/
+env/
+
+# Python cache and build files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+coverage.xml
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Runtime files
+logs/
+*.log
+*.tmp
+*.temp
+
+# Editors
+.vscode/
+.idea/
+
+# Operating systems
+.DS_Store
+Thumbs.db
+desktop.ini
