@@ -583,11 +583,20 @@ BEGIN
 
         ;WITH source_products AS (
             SELECT
-                normalized_product_name,
-                MIN(product_name)
+                source_item.normalized_product_name,
+                MIN(source_item.product_name)
                     AS canonical_product_name
-            FROM #source_items
-            GROUP BY normalized_product_name
+            FROM #source_items AS source_item
+            LEFT JOIN stg.pancake_orders AS current_order
+                ON current_order.shop_id =
+                   source_item.shop_id
+               AND current_order.order_id =
+                   source_item.order_id
+            WHERE current_order.order_id IS NULL
+               OR current_order.source_raw_order_version_id <>
+                  source_item.source_raw_order_version_id
+            GROUP BY
+                source_item.normalized_product_name
         )
         UPDATE target
         SET last_seen_at_utc = SYSUTCDATETIME()
