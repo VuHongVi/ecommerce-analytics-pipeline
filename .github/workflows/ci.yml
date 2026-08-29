@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Install ODBC build dependency
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes unixodbc-dev
+
+      - name: Install project dependencies
+        run: uv sync --locked --all-groups
+
+      - name: Run Ruff lint
+        run: uv run ruff check src jobs tests
+
+      - name: Check Ruff formatting
+        run: uv run ruff format --check src jobs tests
+
+      - name: Run unit tests
+        run: uv run pytest
+
+      - name: Validate sanitized n8n workflow
+        run: |
+          uv run python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path("n8n/workflows/ecommerce_daily_pipeline.json")
+          workflow = json.loads(path.read_text(encoding="utf-8"))
+
+          if isinstance(workflow, list):
+              workflow = workflow[0]
+
+          assert workflow.get("active") is False
+
+          execute_nodes = [
+              node
+              for node in workflow.get("nodes", [])
+              if node.get("type") == "n8n-nodes-base.executeCommand"
+          ]
+          assert len(execute_nodes) == 1
+
+          command = execute_nodes[0]["parameters"]["command"]
+          assert "%ECOMMERCE_ANALYTICS_ROOT%" in command
+          assert "%UV_EXECUTABLE%" in command
+          assert "--allow-partial-extracts" in command
+
+          forbidden_values = (
+              "C:\\Users",
+              "D:\\",
+              "access_token",
+              "api_key",
+              "password",
+              "secret",
+          )
+
+          lowered = path.read_text(encoding="utf-8").lower()
+          for value in forbidden_values:
+              assert value.lower() not in lowered
+          PY
+
+      - name: Reject tracked private artifacts
+        shell: bash
+        run: |
+          forbidden_files="$(
+            git ls-files |
+              grep -E '(^|/)\.env$|\.(pbix|xlsx|xls|csv|tsv|jsonl|log|bak)$' ||
+              true
+          )"
+
+          if [[ -n "$forbidden_files" ]]; then
+            echo "Private artifacts must not be tracked:"
+            echo "$forbidden_files"
+            exit 1
+          fi
