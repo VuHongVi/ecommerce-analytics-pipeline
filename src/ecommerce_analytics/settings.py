@@ -70,16 +70,12 @@ class Settings:
         for field_name in field_names:
             value = getattr(self, field_name)
 
-            if value is None or (
-                isinstance(value, str) and not value.strip()
-            ):
+            if value is None or (isinstance(value, str) and not value.strip()):
                 missing_fields.append(field_name)
 
         if missing_fields:
             missing_list = ", ".join(missing_fields)
-            raise SettingsError(
-                f"Missing required settings: {missing_list}"
-            )
+            raise SettingsError(f"Missing required settings: {missing_list}")
 
 
 def load_settings(
@@ -99,9 +95,7 @@ def load_settings(
         meta_business_id=_get_env("META_BUSINESS_ID"),
         meta_api_version=_get_env("META_API_VERSION", "v23.0"),
         private_data_root=_get_optional_path("PRIVATE_DATA_ROOT"),
-        private_output_root=_get_optional_path(
-            "PRIVATE_OUTPUT_ROOT"
-        ),
+        private_output_root=_get_optional_path("PRIVATE_OUTPUT_ROOT"),
         private_work_root=_get_optional_path("PRIVATE_WORK_ROOT"),
         sql_server=_get_env("SQL_SERVER"),
         sql_database=_get_env(

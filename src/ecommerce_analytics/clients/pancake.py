@@ -94,38 +94,24 @@ class PancakeClient:
         )
 
         if response.status_code in RETRYABLE_STATUS_CODES:
-            raise PancakeRetryableError(
-                f"Temporary Pancake API error: "
-                f"HTTP {response.status_code}"
-            )
+            raise PancakeRetryableError(f"Temporary Pancake API error: HTTP {response.status_code}")
 
         if response.status_code == 403:
-            raise PancakePermissionError(
-                "Pancake API returned HTTP 403."
-            )
+            raise PancakePermissionError("Pancake API returned HTTP 403.")
 
         if response.status_code >= 400:
-            raise PancakeAPIError(
-                f"Pancake API returned HTTP "
-                f"{response.status_code}."
-            )
+            raise PancakeAPIError(f"Pancake API returned HTTP {response.status_code}.")
 
         try:
             payload = response.json()
         except ValueError as error:
-            raise PancakeRetryableError(
-                "Pancake API returned invalid JSON."
-            ) from error
+            raise PancakeRetryableError("Pancake API returned invalid JSON.") from error
 
         if not isinstance(payload, dict):
-            raise PancakeAPIError(
-                "Pancake API payload must be an object."
-            )
+            raise PancakeAPIError("Pancake API payload must be an object.")
 
         if payload.get("success") is False:
-            raise PancakeAPIError(
-                "Pancake API returned success=false."
-            )
+            raise PancakeAPIError("Pancake API returned success=false.")
 
         return payload
 
@@ -134,15 +120,9 @@ class PancakeClient:
         shops = payload.get("shops", [])
 
         if not isinstance(shops, list):
-            raise PancakeAPIError(
-                "Pancake shops payload must be a list."
-            )
+            raise PancakeAPIError("Pancake shops payload must be a list.")
 
-        return [
-            shop
-            for shop in shops
-            if isinstance(shop, dict)
-        ]
+        return [shop for shop in shops if isinstance(shop, dict)]
 
     def iter_orders(
         self,
@@ -153,9 +133,7 @@ class PancakeClient:
         update_status: str,
     ) -> Iterator[dict[str, Any]]:
         if update_status not in {"inserted_at", "updated_at"}:
-            raise ValueError(
-                "update_status must be inserted_at or updated_at."
-            )
+            raise ValueError("update_status must be inserted_at or updated_at.")
 
         page_number = 1
 
@@ -175,9 +153,7 @@ class PancakeClient:
             orders = payload.get("data", [])
 
             if not isinstance(orders, list):
-                raise PancakeAPIError(
-                    "Pancake orders payload must be a list."
-                )
+                raise PancakeAPIError("Pancake orders payload must be a list.")
 
             for order in orders:
                 if isinstance(order, dict):

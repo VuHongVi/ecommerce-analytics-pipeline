@@ -17,9 +17,7 @@ def _canonical_json(value: Any) -> str:
 
 
 def _payload_hash(payload_json: str) -> bytes:
-    return hashlib.sha256(
-        payload_json.encode("utf-8")
-    ).digest()
+    return hashlib.sha256(payload_json.encode("utf-8")).digest()
 
 
 def _utc_naive(value: datetime) -> datetime:
@@ -104,9 +102,7 @@ def load_account_snapshots(
     rows: list[tuple[Any, ...]] = []
 
     for account in accounts:
-        account_object_id = _to_text(
-            account.get("account_object_id")
-        )
+        account_object_id = _to_text(account.get("account_object_id"))
 
         if not account_object_id:
             continue
@@ -121,28 +117,16 @@ def load_account_snapshots(
 
         snapshot = {
             "account_object_id": account_object_id,
-            "account_id": _to_text(
-                account.get("account_id")
-            ),
-            "account_name": _to_text(
-                account.get("account_name")
-            ),
-            "account_status": _to_int(
-                account.get("account_status")
-            ),
-            "currency": _to_text(
-                account.get("currency")
-            ),
-            "timezone_name": _to_text(
-                account.get("timezone_name")
-            ),
+            "account_id": _to_text(account.get("account_id")),
+            "account_name": _to_text(account.get("account_name")),
+            "account_status": _to_int(account.get("account_status")),
+            "currency": _to_text(account.get("currency")),
+            "timezone_name": _to_text(account.get("timezone_name")),
             "discovery_sources": discovery_sources,
         }
 
         snapshot_json = _canonical_json(snapshot)
-        discovery_sources_json = _canonical_json(
-            discovery_sources
-        )
+        discovery_sources_json = _canonical_json(discovery_sources)
 
         rows.append(
             (
@@ -275,25 +259,17 @@ def load_insight_batch(
     if not insights:
         return 0
 
-    account_object_id = _to_text(
-        account.get("account_object_id")
-    )
+    account_object_id = _to_text(account.get("account_object_id"))
 
     if not account_object_id:
-        raise ValueError(
-            "Meta account object ID is required."
-        )
+        raise ValueError("Meta account object ID is required.")
 
     extracted_at = _utc_naive(extracted_at_utc)
     rows: list[tuple[Any, ...]] = []
 
     for insight in insights:
-        date_start = _to_date(
-            insight.get("date_start")
-        )
-        date_stop = _to_date(
-            insight.get("date_stop")
-        )
+        date_start = _to_date(insight.get("date_start"))
+        date_stop = _to_date(insight.get("date_stop"))
         ad_id = _to_text(insight.get("ad_id"))
 
         if not date_start or not date_stop or not ad_id:
@@ -308,14 +284,8 @@ def load_insight_batch(
                 date_start,
                 date_stop,
                 account_object_id,
-                _to_text(
-                    insight.get("account_id")
-                    or account.get("account_id")
-                ),
-                _to_text(
-                    insight.get("account_name")
-                    or account.get("account_name")
-                ),
+                _to_text(insight.get("account_id") or account.get("account_id")),
+                _to_text(insight.get("account_name") or account.get("account_name")),
                 _to_text(insight.get("campaign_id")),
                 _to_text(insight.get("campaign_name")),
                 _to_text(insight.get("adset_id")),
@@ -323,29 +293,19 @@ def load_insight_batch(
                 ad_id,
                 _to_text(insight.get("ad_name")),
                 _to_text(insight.get("objective")),
-                _to_text(
-                    insight.get("optimization_goal")
-                ),
+                _to_text(insight.get("optimization_goal")),
                 _to_int(insight.get("impressions")),
                 _to_int(insight.get("reach")),
                 _to_decimal(insight.get("frequency")),
                 _to_int(insight.get("clicks")),
-                _to_int(
-                    insight.get("inline_link_clicks")
-                ),
+                _to_int(insight.get("inline_link_clicks")),
                 _to_decimal(insight.get("spend")),
                 _to_decimal(insight.get("cpm")),
                 _to_decimal(insight.get("cpc")),
                 _to_decimal(insight.get("ctr")),
                 _json_or_none(insight.get("actions")),
-                _json_or_none(
-                    insight.get("action_values")
-                ),
-                _json_or_none(
-                    insight.get(
-                        "cost_per_action_type"
-                    )
-                ),
+                _json_or_none(insight.get("action_values")),
+                _json_or_none(insight.get("cost_per_action_type")),
                 _payload_hash(payload_json),
                 payload_json,
             )
@@ -397,9 +357,7 @@ def load_insight_batch(
         """
     )
 
-    placeholders = ", ".join(
-        "?" for _ in range(29)
-    )
+    placeholders = ", ".join("?" for _ in range(29))
 
     cursor.executemany(
         f"""

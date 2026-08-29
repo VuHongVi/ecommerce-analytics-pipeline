@@ -88,9 +88,7 @@ def extract_product_cost_workbook(
     resolved_path = Path(file_path).resolve(strict=True)
 
     if resolved_path.suffix.lower() != ".xlsx":
-        raise ValueError(
-            "Product cost source must be an .xlsx file."
-        )
+        raise ValueError("Product cost source must be an .xlsx file.")
 
     file_stat = resolved_path.stat()
 
@@ -105,14 +103,11 @@ def extract_product_cost_workbook(
             MASTER_SHEET_NAME,
             HISTORY_SHEET_NAME,
         }
-        missing_sheets = required_sheets.difference(
-            workbook.sheetnames
-        )
+        missing_sheets = required_sheets.difference(workbook.sheetnames)
 
         if missing_sheets:
             raise ValueError(
-                "Workbook is missing required sheets: "
-                + ", ".join(sorted(missing_sheets))
+                "Workbook is missing required sheets: " + ", ".join(sorted(missing_sheets))
             )
 
         master_sheet = workbook[MASTER_SHEET_NAME]
@@ -180,9 +175,7 @@ def extract_product_cost_workbook(
 
     return ProductCostWorkbook(
         source_file_name=resolved_path.name,
-        source_file_sha256=_file_sha256(
-            resolved_path
-        ),
+        source_file_sha256=_file_sha256(resolved_path),
         source_file_size_bytes=file_stat.st_size,
         source_file_modified_at_utc=datetime.fromtimestamp(
             file_stat.st_mtime,

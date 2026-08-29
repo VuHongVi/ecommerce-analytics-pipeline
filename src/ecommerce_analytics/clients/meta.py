@@ -96,10 +96,7 @@ class MetaClient:
             raise ValueError("Meta API version is required.")
 
         self._access_token = access_token
-        self._base_url = (
-            f"https://graph.facebook.com/"
-            f"{api_version.strip('/')}"
-        )
+        self._base_url = f"https://graph.facebook.com/{api_version.strip('/')}"
         self._timeout = timeout
         self._session = requests.Session()
 
@@ -151,44 +148,28 @@ class MetaClient:
             payload = response.json()
         except ValueError as error:
             if response.status_code in RETRYABLE_HTTP_STATUS_CODES:
-                raise MetaRetryableError(
-                    "Meta API returned invalid JSON."
-                ) from error
+                raise MetaRetryableError("Meta API returned invalid JSON.") from error
 
-            raise MetaAPIError(
-                "Meta API returned invalid JSON."
-            ) from error
+            raise MetaAPIError("Meta API returned invalid JSON.") from error
 
         if not isinstance(payload, dict):
-            raise MetaAPIError(
-                "Meta API payload must be an object."
-            )
+            raise MetaAPIError("Meta API payload must be an object.")
 
         error_payload = payload.get("error")
 
         if isinstance(error_payload, dict):
-            error_code = int(
-                error_payload.get("code") or 0
-            )
+            error_code = int(error_payload.get("code") or 0)
 
             if (
-                response.status_code
-                in RETRYABLE_HTTP_STATUS_CODES
+                response.status_code in RETRYABLE_HTTP_STATUS_CODES
                 or error_code in RETRYABLE_META_ERROR_CODES
             ):
-                raise MetaRetryableError(
-                    f"Temporary Meta API error: {error_code}"
-                )
+                raise MetaRetryableError(f"Temporary Meta API error: {error_code}")
 
-            raise MetaAPIError(
-                f"Meta API error code: {error_code}"
-            )
+            raise MetaAPIError(f"Meta API error code: {error_code}")
 
         if response.status_code >= 400:
-            raise MetaAPIError(
-                f"Meta API returned HTTP "
-                f"{response.status_code}."
-            )
+            raise MetaAPIError(f"Meta API returned HTTP {response.status_code}.")
 
         return payload
 
@@ -216,9 +197,7 @@ class MetaClient:
             return []
 
         if len(operations) > 50:
-            raise ValueError(
-                "Meta Batch API supports at most 50 operations."
-            )
+            raise ValueError("Meta Batch API supports at most 50 operations.")
 
         response = self._session.post(
             f"{self._base_url}/",
@@ -236,53 +215,31 @@ class MetaClient:
             payload = response.json()
         except ValueError as error:
             if response.status_code in RETRYABLE_HTTP_STATUS_CODES:
-                raise MetaRetryableError(
-                    "Meta Batch API returned invalid JSON."
-                ) from error
+                raise MetaRetryableError("Meta Batch API returned invalid JSON.") from error
 
-            raise MetaAPIError(
-                "Meta Batch API returned invalid JSON."
-            ) from error
+            raise MetaAPIError("Meta Batch API returned invalid JSON.") from error
 
         if isinstance(payload, dict):
             error_payload = payload.get("error")
 
             if isinstance(error_payload, dict):
-                error_code = int(
-                    error_payload.get("code") or 0
-                )
+                error_code = int(error_payload.get("code") or 0)
 
                 if (
-                    response.status_code
-                    in RETRYABLE_HTTP_STATUS_CODES
-                    or error_code
-                    in RETRYABLE_META_ERROR_CODES
+                    response.status_code in RETRYABLE_HTTP_STATUS_CODES
+                    or error_code in RETRYABLE_META_ERROR_CODES
                 ):
-                    raise MetaRetryableError(
-                        "Temporary Meta Batch API error: "
-                        f"{error_code}"
-                    )
+                    raise MetaRetryableError(f"Temporary Meta Batch API error: {error_code}")
 
-                raise MetaAPIError(
-                    f"Meta Batch API error code: {error_code}"
-                )
+                raise MetaAPIError(f"Meta Batch API error code: {error_code}")
 
         if response.status_code >= 400:
-            raise MetaAPIError(
-                f"Meta Batch API returned HTTP "
-                f"{response.status_code}."
-            )
+            raise MetaAPIError(f"Meta Batch API returned HTTP {response.status_code}.")
 
         if not isinstance(payload, list):
-            raise MetaAPIError(
-                "Meta Batch API payload must be a list."
-            )
+            raise MetaAPIError("Meta Batch API payload must be a list.")
 
-        return [
-            item
-            for item in payload
-            if isinstance(item, dict)
-        ]
+        return [item for item in payload if isinstance(item, dict)]
 
     def iter_edge(
         self,
@@ -303,9 +260,7 @@ class MetaClient:
             records = payload.get("data", [])
 
             if not isinstance(records, list):
-                raise MetaAPIError(
-                    "Meta edge data must be a list."
-                )
+                raise MetaAPIError("Meta edge data must be a list.")
 
             for record in records:
                 if isinstance(record, dict):
@@ -338,12 +293,8 @@ class MetaClient:
 
         accounts: dict[str, dict[str, Any]] = {}
 
-        for source_name, path_template in (
-            ACCOUNT_SOURCES.items()
-        ):
-            path = path_template.format(
-                business_id=business_id
-            )
+        for source_name, path_template in ACCOUNT_SOURCES.items():
+            path = path_template.format(business_id=business_id)
 
             for source_account in self.iter_edge(
                 path,
@@ -362,45 +313,27 @@ class MetaClient:
                 account = accounts.setdefault(
                     account_object_id,
                     {
-                        "account_object_id": (
-                            account_object_id
-                        ),
-                        "account_id": source_account.get(
-                            "account_id"
-                        ),
-                        "account_name": source_account.get(
-                            "name"
-                        ),
-                        "account_status": source_account.get(
-                            "account_status"
-                        ),
-                        "currency": source_account.get(
-                            "currency"
-                        ),
-                        "timezone_name": source_account.get(
-                            "timezone_name"
-                        ),
+                        "account_object_id": (account_object_id),
+                        "account_id": source_account.get("account_id"),
+                        "account_name": source_account.get("name"),
+                        "account_status": source_account.get("account_status"),
+                        "currency": source_account.get("currency"),
+                        "timezone_name": source_account.get("timezone_name"),
                         "discovery_sources": set(),
                     },
                 )
 
-                account["discovery_sources"].add(
-                    source_name
-                )
+                account["discovery_sources"].add(source_name)
 
         normalized_accounts = []
 
         for account in accounts.values():
-            account["discovery_sources"] = sorted(
-                account["discovery_sources"]
-            )
+            account["discovery_sources"] = sorted(account["discovery_sources"])
             normalized_accounts.append(account)
 
         return sorted(
             normalized_accounts,
-            key=lambda account: account[
-                "account_object_id"
-            ],
+            key=lambda account: account["account_object_id"],
         )
 
     def scan_accounts_with_spend(
@@ -412,15 +345,10 @@ class MetaClient:
         batch_size: int = 50,
     ) -> tuple[list[dict[str, Any]], int]:
         if until < since:
-            raise ValueError(
-                "Meta scan until date must not be "
-                "before since date."
-            )
+            raise ValueError("Meta scan until date must not be before since date.")
 
         if not 1 <= batch_size <= 50:
-            raise ValueError(
-                "Meta batch size must be between 1 and 50."
-            )
+            raise ValueError("Meta batch size must be between 1 and 50.")
 
         valid_accounts: list[dict[str, Any]] = []
         error_count = 0
@@ -438,21 +366,14 @@ class MetaClient:
             len(valid_accounts),
             batch_size,
         ):
-            account_batch = valid_accounts[
-                start_index : start_index + batch_size
-            ]
+            account_batch = valid_accounts[start_index : start_index + batch_size]
             operations: list[dict[str, str]] = []
 
             for account in account_batch:
-                account_object_id = str(
-                    account["account_object_id"]
-                )
+                account_object_id = str(account["account_object_id"])
 
                 insight_params = {
-                    "fields": (
-                        "account_id,date_start,"
-                        "date_stop,spend"
-                    ),
+                    "fields": ("account_id,date_start,date_stop,spend"),
                     "level": "account",
                     "time_increment": "all_days",
                     "time_range": json.dumps(
@@ -465,10 +386,7 @@ class MetaClient:
                     "limit": 10,
                 }
 
-                relative_url = (
-                    f"{account_object_id}/insights?"
-                    f"{urlencode(insight_params)}"
-                )
+                relative_url = f"{account_object_id}/insights?{urlencode(insight_params)}"
 
                 operations.append(
                     {
@@ -480,9 +398,7 @@ class MetaClient:
             responses = self._send_batch(operations)
 
             if len(responses) < len(account_batch):
-                error_count += (
-                    len(account_batch) - len(responses)
-                )
+                error_count += len(account_batch) - len(responses)
 
             for account, subresponse in zip(
                 account_batch,
@@ -490,9 +406,7 @@ class MetaClient:
                 strict=False,
             ):
                 try:
-                    response_code = int(
-                        subresponse.get("code") or 0
-                    )
+                    response_code = int(subresponse.get("code") or 0)
                 except (TypeError, ValueError):
                     error_count += 1
                     continue
@@ -508,9 +422,7 @@ class MetaClient:
                     continue
 
                 try:
-                    body_payload = json.loads(
-                        response_body
-                    )
+                    body_payload = json.loads(response_body)
                 except json.JSONDecodeError:
                     error_count += 1
                     continue
@@ -543,12 +455,7 @@ class MetaClient:
                         continue
 
                     try:
-                        total_spend += Decimal(
-                            str(
-                                insight_row.get("spend")
-                                or "0"
-                            )
-                        )
+                        total_spend += Decimal(str(insight_row.get("spend") or "0"))
                     except InvalidOperation:
                         invalid_spend = True
                         break
@@ -569,15 +476,10 @@ class MetaClient:
         until: date,
     ) -> Iterator[dict[str, Any]]:
         if not account_object_id.strip():
-            raise ValueError(
-                "Meta account object ID is required."
-            )
+            raise ValueError("Meta account object ID is required.")
 
         if until < since:
-            raise ValueError(
-                "Meta insight until date must not be "
-                "before since date."
-            )
+            raise ValueError("Meta insight until date must not be before since date.")
 
         time_range = json.dumps(
             {
@@ -594,9 +496,7 @@ class MetaClient:
                 "level": "ad",
                 "time_increment": 1,
                 "time_range": time_range,
-                "use_account_attribution_setting": (
-                    "true"
-                ),
+                "use_account_attribution_setting": ("true"),
                 "limit": 500,
             },
         )

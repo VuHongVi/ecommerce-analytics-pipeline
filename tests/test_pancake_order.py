@@ -38,21 +38,15 @@ def test_order_payload_removes_sensitive_data():
         ],
     }
 
-    payload_json, payload_hash = serialize_and_hash_order(
-        source_order
-    )
+    payload_json, payload_hash = serialize_and_hash_order(source_order)
     sanitized_order = json.loads(payload_json)
 
     assert "customer" not in sanitized_order
     assert "bill_phone_number" not in sanitized_order
 
-    assert sanitized_order["shipping_address"] == {
-        "province_name": "Hà Nội"
-    }
+    assert sanitized_order["shipping_address"] == {"province_name": "Hà Nội"}
 
-    assert sanitized_order["partner"] == {
-        "partner_name": "GHTK"
-    }
+    assert sanitized_order["partner"] == {"partner_name": "GHTK"}
 
     seller = sanitized_order["items"][0]["assigning_seller"]
     assert seller == {"name": "Nhân viên A"}

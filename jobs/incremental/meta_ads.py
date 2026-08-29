@@ -25,20 +25,14 @@ from ecommerce_analytics.settings import load_settings
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description=(
-            "Incrementally synchronize recent Meta Ads "
-            "insights into SQL Server RAW."
-        )
+        description=("Incrementally synchronize recent Meta Ads insights into SQL Server RAW.")
     )
 
     parser.add_argument(
         "--lookback-days",
         type=int,
         default=8,
-        help=(
-            "Number of completed business days "
-            "to synchronize."
-        ),
+        help=("Number of completed business days to synchronize."),
     )
     parser.add_argument(
         "--chunk-days",
@@ -60,38 +54,23 @@ def main() -> int:
     args = build_parser().parse_args()
 
     if args.lookback_days < 1:
-        raise ValueError(
-            "--lookback-days must be at least 1."
-        )
+        raise ValueError("--lookback-days must be at least 1.")
 
     if args.chunk_days < 1:
-        raise ValueError(
-            "--chunk-days must be at least 1."
-        )
+        raise ValueError("--chunk-days must be at least 1.")
 
-    if (
-        args.account_limit is not None
-        and args.account_limit < 1
-    ):
-        raise ValueError(
-            "--account-limit must be at least 1."
-        )
+    if args.account_limit is not None and args.account_limit < 1:
+        raise ValueError("--account-limit must be at least 1.")
 
     settings = load_settings()
     settings.require("meta_access_token")
     settings.require("meta_business_id")
 
-    business_timezone = ZoneInfo(
-        settings.business_timezone
-    )
-    business_today = datetime.now(
-        business_timezone
-    ).date()
+    business_timezone = ZoneInfo(settings.business_timezone)
+    business_today = datetime.now(business_timezone).date()
 
     until = business_today - timedelta(days=1)
-    since = until - timedelta(
-        days=args.lookback_days - 1
-    )
+    since = until - timedelta(days=args.lookback_days - 1)
 
     window_start_utc = datetime.combine(
         since,
@@ -132,9 +111,7 @@ def main() -> int:
             settings.meta_access_token,
             settings.meta_api_version,
         ) as client:
-            accounts = client.get_ad_accounts(
-                settings.meta_business_id
-            )
+            accounts = client.get_ad_accounts(settings.meta_business_id)
             account_count = len(accounts)
 
             snapshot_count = load_account_snapshots(
@@ -144,59 +121,41 @@ def main() -> int:
                 accounts=accounts,
             )
 
-            active_accounts, scan_errors = (
-                client.scan_accounts_with_spend(
-                    accounts,
-                    since,
-                    until,
-                )
+            active_accounts, scan_errors = client.scan_accounts_with_spend(
+                accounts,
+                since,
+                until,
             )
 
-            active_account_count = len(
-                active_accounts
-            )
+            active_account_count = len(active_accounts)
 
             if args.account_limit is not None:
-                active_accounts = active_accounts[
-                    : args.account_limit
-                ]
+                active_accounts = active_accounts[: args.account_limit]
 
-            total_accounts_to_process = len(
-                active_accounts
-            )
+            total_accounts_to_process = len(active_accounts)
 
             for account_index, account in enumerate(
                 active_accounts,
                 start=1,
             ):
-                print(
-                    "Processing Meta account "
-                    f"{account_index}/"
-                    f"{total_accounts_to_process}"
-                )
+                print(f"Processing Meta account {account_index}/{total_accounts_to_process}")
 
                 account_failed = False
 
-                for chunk_since, chunk_until in (
-                    iter_date_chunks(
-                        since,
-                        until,
-                        args.chunk_days,
-                    )
+                for chunk_since, chunk_until in iter_date_chunks(
+                    since,
+                    until,
+                    args.chunk_days,
                 ):
                     try:
-                        extracted, loaded = (
-                            extract_and_load_range(
-                                client=client,
-                                connection=connection,
-                                run_id=run_id,
-                                extracted_at_utc=(
-                                    extracted_at_utc
-                                ),
-                                account=account,
-                                since=chunk_since,
-                                until=chunk_until,
-                            )
+                        extracted, loaded = extract_and_load_range(
+                            client=client,
+                            connection=connection,
+                            run_id=run_id,
+                            extracted_at_utc=(extracted_at_utc),
+                            account=account,
+                            since=chunk_since,
+                            until=chunk_until,
                         )
                     except MetaAPIError:
                         failed_chunks += 1
@@ -213,10 +172,7 @@ def main() -> int:
 
         if scan_errors or failed_chunks:
             status = "partial"
-            error_message = (
-                f"scan_errors={scan_errors}; "
-                f"failed_chunks={failed_chunks}"
-            )
+            error_message = f"scan_errors={scan_errors}; failed_chunks={failed_chunks}"
         else:
             status = "succeeded"
             error_message = None
@@ -233,10 +189,7 @@ def main() -> int:
             connection,
             run_id,
             status="failed",
-            error_message=(
-                f"{type(error).__name__}: "
-                f"{str(error)[:1000]}"
-            ),
+            error_message=(f"{type(error).__name__}: {str(error)[:1000]}"),
         )
         raise
 

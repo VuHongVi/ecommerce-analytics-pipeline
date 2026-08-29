@@ -60,10 +60,7 @@ def sanitize_value(value: Any) -> Any:
         }
 
     if isinstance(value, list):
-        return [
-            sanitize_value(item)
-            for item in value
-        ]
+        return [sanitize_value(item) for item in value]
 
     return value
 
@@ -81,8 +78,6 @@ def serialize_and_hash_order(
         default=str,
     )
 
-    payload_hash = hashlib.sha256(
-        payload_json.encode("utf-8")
-    ).digest()
+    payload_hash = hashlib.sha256(payload_json.encode("utf-8")).digest()
 
     return payload_json, payload_hash

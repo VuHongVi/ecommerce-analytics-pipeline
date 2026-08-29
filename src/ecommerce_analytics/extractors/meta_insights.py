@@ -21,8 +21,7 @@ def iter_date_chunks(
 
     while chunk_start <= until:
         chunk_end = min(
-            chunk_start
-            + timedelta(days=chunk_days - 1),
+            chunk_start + timedelta(days=chunk_days - 1),
             until,
         )
 
@@ -40,9 +39,7 @@ def extract_and_load_range(
     since: date,
     until: date,
 ) -> tuple[int, int]:
-    account_object_id = str(
-        account["account_object_id"]
-    )
+    account_object_id = str(account["account_object_id"])
 
     try:
         insights = list(
@@ -57,32 +54,26 @@ def extract_and_load_range(
             raise
 
         range_days = (until - since).days
-        midpoint = since + timedelta(
-            days=range_days // 2
+        midpoint = since + timedelta(days=range_days // 2)
+
+        left_extracted, left_loaded = extract_and_load_range(
+            client=client,
+            connection=connection,
+            run_id=run_id,
+            extracted_at_utc=extracted_at_utc,
+            account=account,
+            since=since,
+            until=midpoint,
         )
 
-        left_extracted, left_loaded = (
-            extract_and_load_range(
-                client=client,
-                connection=connection,
-                run_id=run_id,
-                extracted_at_utc=extracted_at_utc,
-                account=account,
-                since=since,
-                until=midpoint,
-            )
-        )
-
-        right_extracted, right_loaded = (
-            extract_and_load_range(
-                client=client,
-                connection=connection,
-                run_id=run_id,
-                extracted_at_utc=extracted_at_utc,
-                account=account,
-                since=midpoint + timedelta(days=1),
-                until=until,
-            )
+        right_extracted, right_loaded = extract_and_load_range(
+            client=client,
+            connection=connection,
+            run_id=run_id,
+            extracted_at_utc=extracted_at_utc,
+            account=account,
+            since=midpoint + timedelta(days=1),
+            until=until,
         )
 
         return (

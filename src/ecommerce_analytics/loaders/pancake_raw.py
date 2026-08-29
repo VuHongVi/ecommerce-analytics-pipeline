@@ -16,9 +16,7 @@ def _parse_datetime(value: Any) -> datetime | None:
     if isinstance(value, datetime):
         parsed_value = value
     else:
-        parsed_value = datetime.fromisoformat(
-            str(value).replace("Z", "+00:00")
-        )
+        parsed_value = datetime.fromisoformat(str(value).replace("Z", "+00:00"))
 
     if parsed_value.tzinfo is not None:
         parsed_value = parsed_value.astimezone(UTC)
@@ -90,13 +88,9 @@ def load_order_batch(
             updated_at = inserted_at
 
         if updated_at is None:
-            raise ValueError(
-                f"Pancake order {order_id} has no timestamp."
-            )
+            raise ValueError(f"Pancake order {order_id} has no timestamp.")
 
-        payload_json, payload_hash = serialize_and_hash_order(
-            order
-        )
+        payload_json, payload_hash = serialize_and_hash_order(order)
 
         system_id = order.get("system_id")
 

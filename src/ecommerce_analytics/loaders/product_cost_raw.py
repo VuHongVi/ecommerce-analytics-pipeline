@@ -29,9 +29,7 @@ def _canonical_json(value: Any) -> str:
 
 
 def _row_hash(row_json: str) -> bytes:
-    return hashlib.sha256(
-        row_json.encode("utf-8")
-    ).digest()
+    return hashlib.sha256(row_json.encode("utf-8")).digest()
 
 
 def _to_text(value: Any) -> str | None:
@@ -109,12 +107,8 @@ def load_product_cost_workbook(
             return ProductCostLoadResult(
                 batch_id=int(existing_batch[0]),
                 already_loaded=True,
-                master_rows_loaded=int(
-                    existing_batch[1]
-                ),
-                history_rows_loaded=int(
-                    existing_batch[2]
-                ),
+                master_rows_loaded=int(existing_batch[1]),
+                history_rows_loaded=int(existing_batch[2]),
             )
 
         inserted_batch = cursor.execute(
@@ -148,20 +142,13 @@ def load_product_cost_workbook(
         master_records: list[tuple[Any, ...]] = []
 
         for row in workbook.master_rows:
-            source_row_number = int(
-                row["source_row_number"]
-            )
-            product_name = _to_text(
-                row["product_name"]
-            )
-            unit_cost = _to_decimal(
-                row["unit_cost"]
-            )
+            source_row_number = int(row["source_row_number"])
+            product_name = _to_text(row["product_name"])
+            unit_cost = _to_decimal(row["unit_cost"])
 
             source_row_json = _canonical_json(
                 {
-                    "source_row_number":
-                        source_row_number,
+                    "source_row_number": source_row_number,
                     "product_name": product_name,
                     "unit_cost": unit_cost,
                 }
@@ -199,37 +186,21 @@ def load_product_cost_workbook(
         history_records: list[tuple[Any, ...]] = []
 
         for row in workbook.history_rows:
-            source_row_number = int(
-                row["source_row_number"]
-            )
-            product_name = _to_text(
-                row["product_name"]
-            )
-            approved_quantity = _to_decimal(
-                row["approved_quantity"]
-            )
-            import_date = _to_date(
-                row["import_date"]
-            )
-            warehouse_arrival_date = _to_date(
-                row["warehouse_arrival_date"]
-            )
-            actual_unit_cost = _to_decimal(
-                row["actual_unit_cost"]
-            )
+            source_row_number = int(row["source_row_number"])
+            product_name = _to_text(row["product_name"])
+            approved_quantity = _to_decimal(row["approved_quantity"])
+            import_date = _to_date(row["import_date"])
+            warehouse_arrival_date = _to_date(row["warehouse_arrival_date"])
+            actual_unit_cost = _to_decimal(row["actual_unit_cost"])
 
             source_row_json = _canonical_json(
                 {
-                    "source_row_number":
-                        source_row_number,
+                    "source_row_number": source_row_number,
                     "product_name": product_name,
-                    "approved_quantity":
-                        approved_quantity,
+                    "approved_quantity": approved_quantity,
                     "import_date": import_date,
-                    "warehouse_arrival_date":
-                        warehouse_arrival_date,
-                    "actual_unit_cost":
-                        actual_unit_cost,
+                    "warehouse_arrival_date": warehouse_arrival_date,
+                    "actual_unit_cost": actual_unit_cost,
                 }
             )
 

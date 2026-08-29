@@ -45,16 +45,20 @@ def get_checkpoint(
     connection: pyodbc.Connection,
     shop_id: str,
 ) -> datetime | None:
-    row = connection.cursor().execute(
-        """
+    row = (
+        connection.cursor()
+        .execute(
+            """
         SELECT last_source_updated_at
         FROM ctl.sync_checkpoints
         WHERE source_name = 'pancake'
           AND entity_name = 'orders'
           AND partition_key = ?;
         """,
-        shop_id,
-    ).fetchone()
+            shop_id,
+        )
+        .fetchone()
+    )
 
     if row is None or row[0] is None:
         return None
@@ -74,9 +78,7 @@ def save_checkpoint(
     checkpoint: datetime,
     run_id: UUID,
 ) -> None:
-    checkpoint_utc = checkpoint.astimezone(UTC).replace(
-        tzinfo=None
-    )
+    checkpoint_utc = checkpoint.astimezone(UTC).replace(tzinfo=None)
     cursor = connection.cursor()
 
     cursor.execute(
@@ -169,19 +171,14 @@ def main() -> None:
     skipped_shops = 0
 
     try:
-        with PancakeClient(
-            settings.pancake_api_key
-        ) as client:
+        with PancakeClient(settings.pancake_api_key) as client:
             shops = client.get_shops()
 
             if args.shop_limit is not None:
                 shops = shops[: args.shop_limit]
 
             for shop in shops:
-                shop_id_value = (
-                    shop.get("id")
-                    or shop.get("shop_id")
-                )
+                shop_id_value = shop.get("id") or shop.get("shop_id")
 
                 if shop_id_value is None:
                     skipped_shops += 1
@@ -196,9 +193,7 @@ def main() -> None:
                 if checkpoint is None:
                     shop_window_start = fallback_start
                 else:
-                    shop_window_start = (
-                        checkpoint - CHECKPOINT_OVERLAP
-                    )
+                    shop_window_start = checkpoint - CHECKPOINT_OVERLAP
 
                 try:
                     order_iterator = client.iter_orders(
@@ -232,11 +227,7 @@ def main() -> None:
         finish_run(
             connection,
             run_id,
-            status=(
-                "partial"
-                if skipped_shops > 0
-                else "succeeded"
-            ),
+            status=("partial" if skipped_shops > 0 else "succeeded"),
         )
 
     except Exception as error:

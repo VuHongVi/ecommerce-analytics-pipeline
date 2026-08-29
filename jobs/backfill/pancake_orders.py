@@ -100,7 +100,6 @@ def main() -> None:
         "sql_driver",
     )
 
-
     window_start = datetime.combine(
         args.since,
         time.min,
@@ -128,9 +127,7 @@ def main() -> None:
     skipped_shops = 0
 
     try:
-        with PancakeClient(
-            settings.pancake_api_key
-        ) as client:
+        with PancakeClient(settings.pancake_api_key) as client:
             shops = client.get_shops()
 
             if args.shop_limit is not None:
@@ -171,11 +168,7 @@ def main() -> None:
                 except PancakePermissionError:
                     skipped_shops += 1
 
-        run_status = (
-            "partial"
-            if skipped_shops > 0
-            else "succeeded"
-        )
+        run_status = "partial" if skipped_shops > 0 else "succeeded"
 
         finish_run(
             connection,

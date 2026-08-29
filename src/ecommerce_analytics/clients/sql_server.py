@@ -27,10 +27,7 @@ def build_connection_string(
         f"SERVER={settings.sql_server}",
         f"DATABASE={target_database}",
         f"Encrypt={_yes_no(settings.sql_encrypt)}",
-        (
-            "TrustServerCertificate="
-            f"{_yes_no(settings.sql_trust_server_certificate)}"
-        ),
+        (f"TrustServerCertificate={_yes_no(settings.sql_trust_server_certificate)}"),
     ]
 
     auth_mode = settings.sql_auth_mode.lower()
@@ -46,9 +43,7 @@ def build_connection_string(
             ]
         )
     else:
-        raise SettingsError(
-            "SQL_AUTH_MODE must be 'windows' or 'sql'."
-        )
+        raise SettingsError("SQL_AUTH_MODE must be 'windows' or 'sql'.")
 
     return ";".join(connection_parts)
 
