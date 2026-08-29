@@ -19,14 +19,8 @@ from ecommerce_analytics.loaders.pancake_raw import (
 )
 from ecommerce_analytics.settings import load_settings
 
-
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
-QUALITY_SCRIPT_PATH = (
-    REPOSITORY_ROOT
-    / "sql"
-    / "04_quality"
-    / "001_validate_daily_pipeline.sql"
-)
+QUALITY_SCRIPT_PATH = REPOSITORY_ROOT / "sql" / "04_quality" / "001_validate_daily_pipeline.sql"
 
 
 @dataclass(frozen=True)
@@ -77,26 +71,17 @@ def parse_args() -> argparse.Namespace:
     execution_mode.add_argument(
         "--sql-only",
         action="store_true",
-        help=(
-            "Skip Pancake and Meta API extraction and only "
-            "refresh STAGING and MART."
-        ),
+        help=("Skip Pancake and Meta API extraction and only refresh STAGING and MART."),
     )
     execution_mode.add_argument(
         "--quality-only",
         action="store_true",
-        help=(
-            "Skip extraction and refresh procedures and only "
-            "run the quality gate."
-        ),
+        help=("Skip extraction and refresh procedures and only run the quality gate."),
     )
     parser.add_argument(
         "--allow-partial-extracts",
         action="store_true",
-        help=(
-            "Continue when an extraction job records partial "
-            "instead of succeeded."
-        ),
+        help=("Continue when an extraction job records partial instead of succeeded."),
     )
     parser.add_argument(
         "--meta-lookback-days",
@@ -114,14 +99,10 @@ def parse_args() -> argparse.Namespace:
     args = parser.parse_args()
 
     if args.meta_lookback_days < 1:
-        parser.error(
-            "--meta-lookback-days must be at least 1."
-        )
+        parser.error("--meta-lookback-days must be at least 1.")
 
     if args.meta_chunk_days < 1:
-        parser.error(
-            "--meta-chunk-days must be at least 1."
-        )
+        parser.error("--meta-chunk-days must be at least 1.")
 
     return args
 
@@ -130,8 +111,10 @@ def fetch_latest_run(
     connection: pyodbc.Connection,
     pipeline_name: str,
 ) -> PipelineRun | None:
-    row = connection.cursor().execute(
-        """
+    row = (
+        connection.cursor()
+        .execute(
+            """
         SELECT TOP (1)
             run_id,
             [status],
@@ -142,8 +125,10 @@ def fetch_latest_run(
             started_at_utc DESC,
             run_id DESC;
         """,
-        pipeline_name,
-    ).fetchone()
+            pipeline_name,
+        )
+        .fetchone()
+    )
 
     if row is None:
         return None
@@ -151,9 +136,7 @@ def fetch_latest_run(
     return PipelineRun(
         run_id=str(row[0]),
         status=str(row[1]),
-        error_message=(
-            str(row[2]) if row[2] is not None else None
-        ),
+        error_message=(str(row[2]) if row[2] is not None else None),
     )
 
 
@@ -189,11 +172,7 @@ def run_extract_step(
     )
 
     if completed.returncode != 0:
-        detail = (
-            current_run.error_message
-            if current_run is not None
-            else None
-        )
+        detail = current_run.error_message if current_run is not None else None
         raise PipelineStepError(
             f"{step.name} exited with code "
             f"{completed.returncode}. "
@@ -201,30 +180,18 @@ def run_extract_step(
         )
 
     if current_run is None:
-        raise PipelineStepError(
-            f"{step.name} did not create a pipeline run."
-        )
+        raise PipelineStepError(f"{step.name} did not create a pipeline run.")
 
-    if (
-        previous_run is not None
-        and current_run.run_id == previous_run.run_id
-    ):
-        raise PipelineStepError(
-            f"{step.name} did not create a new pipeline run."
-        )
+    if previous_run is not None and current_run.run_id == previous_run.run_id:
+        raise PipelineStepError(f"{step.name} did not create a new pipeline run.")
 
     if current_run.status == "partial" and allow_partial:
-        print(
-            f"WARNING: {step.name} completed with "
-            "partial status."
-        )
+        print(f"WARNING: {step.name} completed with partial status.")
         return
 
     if current_run.status != "succeeded":
         raise PipelineStepError(
-            f"{step.name} recorded status "
-            f"{current_run.status!r}. "
-            f"{current_run.error_message or ''}"
+            f"{step.name} recorded status {current_run.status!r}. {current_run.error_message or ''}"
         )
 
     print(f"FINISH EXTRACT: {step.name}")
@@ -271,10 +238,7 @@ def execute_procedure(
 
     while True:
         if cursor.description is not None:
-            columns = [
-                str(column[0])
-                for column in cursor.description
-            ]
+            columns = [str(column[0]) for column in cursor.description]
             fetched_rows = cursor.fetchall()
             rows = [tuple(row) for row in fetched_rows]
 
@@ -298,24 +262,16 @@ def execute_quality_gate(
     print("START QUALITY GATE")
 
     if not QUALITY_SCRIPT_PATH.is_file():
-        raise PipelineStepError(
-            "Quality script was not found: "
-            f"{QUALITY_SCRIPT_PATH}"
-        )
+        raise PipelineStepError(f"Quality script was not found: {QUALITY_SCRIPT_PATH}")
 
-    script = QUALITY_SCRIPT_PATH.read_text(
-        encoding="utf-8"
-    )
+    script = QUALITY_SCRIPT_PATH.read_text(encoding="utf-8")
     cursor = connection.cursor()
     cursor.execute(script)
     checks: list[dict[str, Any]] = []
 
     while True:
         if cursor.description is not None:
-            columns = [
-                str(column[0])
-                for column in cursor.description
-            ]
+            columns = [str(column[0]) for column in cursor.description]
 
             if {
                 "check_name",
@@ -341,9 +297,7 @@ def execute_quality_gate(
     connection.commit()
 
     if not checks:
-        raise PipelineStepError(
-            "Quality gate returned no checks."
-        )
+        raise PipelineStepError("Quality gate returned no checks.")
 
     failures = []
 
@@ -352,29 +306,18 @@ def execute_quality_gate(
         failure_count = int(check["failure_count"])
         status = str(check["check_status"])
 
-        print(
-            f"QUALITY {status}: {check_name} "
-            f"(failures={failure_count})"
-        )
+        print(f"QUALITY {status}: {check_name} (failures={failure_count})")
 
         if failure_count != 0:
             failures.append(check)
 
     if failures:
         failure_summary = ", ".join(
-            f"{failure['check_name']}="
-            f"{failure['failure_count']}"
-            for failure in failures
+            f"{failure['check_name']}={failure['failure_count']}" for failure in failures
         )
-        raise PipelineStepError(
-            "Quality gate failed: "
-            f"{failure_summary}"
-        )
+        raise PipelineStepError(f"Quality gate failed: {failure_summary}")
 
-    print(
-        "FINISH QUALITY GATE: "
-        f"{len(checks)} checks passed"
-    )
+    print(f"FINISH QUALITY GATE: {len(checks)} checks passed")
 
 
 def build_extract_steps(
@@ -382,24 +325,18 @@ def build_extract_steps(
     meta_lookback_days: int,
     meta_chunk_days: int,
 ) -> tuple[ExtractStep, ...]:
-    incremental_directory = (
-        REPOSITORY_ROOT / "jobs" / "incremental"
-    )
+    incremental_directory = REPOSITORY_ROOT / "jobs" / "incremental"
 
     return (
         ExtractStep(
             name="Pancake orders",
             pipeline_name="pancake_orders_incremental",
-            script_path=(
-                incremental_directory / "pancake_orders.py"
-            ),
+            script_path=(incremental_directory / "pancake_orders.py"),
         ),
         ExtractStep(
             name="Meta Ads",
             pipeline_name="meta_ads_incremental",
-            script_path=(
-                incremental_directory / "meta_ads.py"
-            ),
+            script_path=(incremental_directory / "meta_ads.py"),
             arguments=(
                 "--lookback-days",
                 str(meta_lookback_days),
@@ -414,11 +351,7 @@ def main() -> int:
     args = parse_args()
     settings = load_settings()
     pipeline_started_at = datetime.now(UTC)
-    run_type = (
-        "manual"
-        if args.sql_only or args.quality_only
-        else "incremental"
-    )
+    run_type = "manual" if args.sql_only or args.quality_only else "incremental"
 
     connection = connect_sql_server(settings)
     run_id = start_run(
@@ -432,18 +365,13 @@ def main() -> int:
 
     try:
         if args.quality_only:
-            print(
-                "RAW extraction and SQL refresh skipped: "
-                "--quality-only"
-            )
+            print("RAW extraction and SQL refresh skipped: --quality-only")
         else:
             if args.sql_only:
                 print("RAW extraction skipped: --sql-only")
             else:
                 extract_steps = build_extract_steps(
-                    meta_lookback_days=(
-                        args.meta_lookback_days
-                    ),
+                    meta_lookback_days=(args.meta_lookback_days),
                     meta_chunk_days=args.meta_chunk_days,
                 )
 
@@ -451,9 +379,7 @@ def main() -> int:
                     run_extract_step(
                         connection,
                         step,
-                        allow_partial=(
-                            args.allow_partial_extracts
-                        ),
+                        allow_partial=(args.allow_partial_extracts),
                     )
 
             for procedure_name in PROCEDURES:
@@ -477,10 +403,7 @@ def main() -> int:
             connection,
             run_id,
             status="failed",
-            error_message=(
-                f"{type(error).__name__}: "
-                f"{str(error)[:1900]}"
-            ),
+            error_message=(f"{type(error).__name__}: {str(error)[:1900]}"),
         )
         raise
 
